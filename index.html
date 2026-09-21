@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Station SOP — Noida Metro Rail Corporation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* style.css */
+:root{
+  --navy:#0a2540;
+  --navy-2:#0f3358;
+  --steel:#3d6a94;
+  --line-green:#1c8a53;
+  --line-green-dim:#1c8a5333;
+  --alert:#c0392b;
+  --alert-dim:#c0392b1f;
+  --paper:#f3f5f7;
+  --paper-2:#ffffff;
+  --ink:#132436;
+  --ink-soft:#4a5b6d;
+  --hair:#d7dee4;
+  --focus:#1c8a53;
+}
+
+*{box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  margin:0;
+  font-family:'IBM Plex Sans', sans-serif;
+  background:var(--navy);
+  color:var(--ink);
+  overflow:hidden;
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important; transition-duration:.001ms !important;}
+}
+
+/* --- Universal Text Hover Effect --- */
+h1, h2, h3, p, li, span, b, em {
+  transition: text-shadow 0.3s ease, opacity 0.3s ease;
+}
+
+h1:hover, h2:hover, h3:hover, p:hover, li:hover, span:hover, b:hover, em:hover {
+  text-shadow: 0 0 12px currentColor;
+  opacity: 0.85;
+  cursor: default;
+}
+/* ----------------------------------- */
+
+#rail{
+  position:fixed; top:0; left:0; right:0; z-index:50;
+  background:var(--navy);
+  padding:14px 28px 10px;
+  border-bottom:1px solid #ffffff14;
+}
+#rail .rail-top{
+  display:flex; align-items:center; justify-content:space-between;
+  max-width:1400px; margin:0 auto 10px;
+  font-family:'IBM Plex Mono', monospace;
+  font-size:11px; letter-spacing:.08em; color:#9fb3c8; text-transform:uppercase;
+}
+#rail .rail-top b{color:#fff; font-weight:600;}
+.line-track{
+  position:relative; max-width:1400px; margin:0 auto; height:34px;
+}
+.line-track::before{
+  content:"";
+  position:absolute; left:0; right:0; top:50%; height:3px;
+  background:linear-gradient(90deg, var(--line-green), var(--line-green) 100%);
+  opacity:.35; transform:translateY(-50%);
+}
+.stations{
+  position:relative; display:flex; justify-content:space-between; align-items:center; height:100%;
+}
+.station{
+  position:relative; width:16px; height:16px; border-radius:50%;
+  background:var(--navy); border:2.5px solid #56728c;
+  cursor:pointer; flex:0 0 auto;
+  transition:border-color .2s ease, background .2s ease, transform .15s ease;
+}
+.station:hover{transform:scale(1.15);}
+.station:focus-visible{outline:2px solid #fff; outline-offset:3px;}
+.station.done{background:var(--line-green); border-color:var(--line-green);}
+.station.active{background:#fff; border-color:#fff; transform:scale(1.35);}
+.station.emergency.done{background:var(--alert); border-color:var(--alert);}
+.station.emergency.active{background:#fff; border-color:var(--alert);}
+.station .stop-label{
+  position:absolute; top:22px; left:50%; transform:translateX(-50%);
+  font-family:'IBM Plex Mono', monospace; font-size:9.5px; color:#7d93a8;
+  white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .15s ease;
+}
+.station:hover .stop-label, .station.active .stop-label{opacity:1; color:#fff;}
+
+#viewport{
+  position:absolute; top:76px; bottom:56px; left:0; right:0;
+  background:var(--paper);
+}
+.slide{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  padding:0;
+  opacity:0; visibility:hidden;
+  transform:translateY(14px);
+  transition:opacity .35s ease, transform .35s ease;
+}
+.slide.active{opacity:1; visibility:visible; transform:translateY(0); z-index: 5;}
+
+.slide.title-slide{
+  background:
+    linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%);
+  color:#fff; align-items:center; justify-content:center; text-align:left;
+}
+.title-wrap{max-width:1400px; width:100%; padding:0 72px; display:flex; align-items:center; gap:64px;}
+.title-mark{
+  flex:0 0 auto; width:132px; height:132px; border-radius:50%;
+  border:5px solid var(--line-green);
+  display:flex; align-items:center; justify-content:center;
+  position:relative;
+}
+.title-mark::before{
+  content:""; position:absolute; inset:14px;
+  background-image: repeating-linear-gradient(115deg, var(--line-green) 0 9px, transparent 9px 15px);
+  -webkit-mask: radial-gradient(circle, #000 60%, transparent 62%);
+          mask: radial-gradient(circle, #000 60%, transparent 62%);
+}
+.title-eyebrow{
+  font-family:'IBM Plex Mono', monospace; font-size:14px; letter-spacing:.22em;
+  color:#7fd0a3; text-transform:uppercase; margin:0 0 18px;
+}
+.title-heading{
+  font-family:'IBM Plex Sans Condensed', sans-serif; font-weight:700;
+  font-size:clamp(48px, 6.4vw, 92px); line-height:0.98; margin:0 0 22px; letter-spacing:-.01em;
+}
+.title-heading em{font-style:normal; color:var(--line-green);}
+.title-sub{font-size:19px; color:#c3d2df; max-width:620px; line-height:1.5; margin:0 0 30px;}
+.title-meta{
+  display:flex; gap:36px; font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:#8ea6bc;
+  border-top:1px solid #ffffff26; padding-top:20px; letter-spacing:.03em;
+}
+.title-meta span b{display:block; color:#fff; font-family:'IBM Plex Sans'; font-size:14.5px; font-weight:600; margin-top:4px; letter-spacing:0;}
+
+.slide.content-slide{padding:44px 72px 34px;}
+.cs-head{
+  display:flex; align-items:baseline; gap:22px; margin-bottom:8px;
+  border-bottom:2px solid var(--ink); padding-bottom:18px;
+}
+.cs-code{
+  font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:15px;
+  color:#fff; background:var(--navy); padding:6px 14px; border-radius:3px; letter-spacing:.04em;
+  flex:0 0 auto;
+}
+.slide.content-slide.is-emergency .cs-code{background:var(--alert);}
+.cs-title{
+  font-family:'IBM Plex Sans Condensed', sans-serif; font-weight:700; font-size:clamp(26px,2.7vw,38px);
+  color:var(--navy); margin:0; letter-spacing:-.01em; line-height:1.05;
+}
+.slide.content-slide.is-emergency .cs-title{color:var(--alert);}
+.cs-tag{
+  margin-left:auto; font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--ink-soft);
+  letter-spacing:.08em; text-transform:uppercase; align-self:center; white-space:nowrap;
+}
+
+.cs-grid{
+  flex:1; display:grid; gap:18px; margin-top:22px; min-height:0;
+  grid-template-columns:repeat(var(--cols, 3), 1fr);
+  overflow-y:auto;
+}
+.panel{
+  background:var(--paper-2); border:1px solid var(--hair); border-radius:6px;
+  padding:22px 24px; display:flex; flex-direction:column; min-height:0;
+  border-top:3px solid var(--line-green);
+}
+.slide.content-slide.is-emergency .panel{border-top-color:var(--alert);}
+.panel h3{
+  margin:0 0 13px; font-family:'IBM Plex Sans Condensed', sans-serif; font-weight:600;
+  font-size:14.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--navy);
+  display:flex; align-items:center; gap:9px;
+}
+.panel h3::before{
+  content:""; width:7px; height:7px; border-radius:50%; background:var(--line-green); flex:0 0 auto;
+}
+.slide.content-slide.is-emergency .panel h3::before{background:var(--alert);}
+.panel ul{margin:0; padding:0 0 0 18px; overflow-y:auto;}
+.panel li{
+  font-size:14px; line-height:1.45; color:var(--ink); margin-bottom:9px; padding-left:2px;
+}
+.panel li b, .panel li strong{color:var(--navy); font-weight:600;}
+.panel li:last-child{margin-bottom:0;}
+.panel::-webkit-scrollbar{width:6px;}
+.panel ul::-webkit-scrollbar{width:6px;}
+.panel ul::-webkit-scrollbar-thumb{background:var(--hair); border-radius:3px;}
+
+.slide.end-slide{
+  background:linear-gradient(180deg, var(--navy) 0%, var(--navy-2) 100%);
+  color:#fff; align-items:center; justify-content:center; text-align:center;
+}
+.end-slide .title-eyebrow{color:#7fd0a3;}
+.end-slide h2{font-family:'IBM Plex Sans Condensed', sans-serif; font-size:clamp(38px,5vw,64px); margin:14px 0; font-weight:700;}
+.end-slide p{color:#c3d2df; font-size:16px; max-width:560px; margin:0 auto;}
+
+#controls{
+  position:fixed; bottom:0; left:0; right:0; height:56px; z-index:50;
+  background:var(--navy); display:flex; align-items:center; justify-content:space-between;
+  padding:0 28px; border-top:1px solid #ffffff14;
+}
+.ctrl-btn{
+  background:transparent; border:1px solid #ffffff33; color:#fff; border-radius:4px;
+  font-family:'IBM Plex Sans', sans-serif; font-size:13px; font-weight:500;
+  padding:8px 18px; cursor:pointer; display:flex; align-items:center; gap:8px;
+  transition:background .15s ease, border-color .15s ease;
+}
+.ctrl-btn:hover{background:#ffffff14; border-color:#ffffff55;}
+.ctrl-btn:focus-visible{outline:2px solid var(--line-green); outline-offset:2px;}
+.ctrl-btn:disabled{opacity:.3; cursor:default; pointer-events:none;}
+#counter{
+  font-family:'IBM Plex Mono', monospace; color:#9fb3c8; font-size:13px; letter-spacing:.05em;
+}
+#counter b{color:#fff;}
+
+@media (max-width: 900px){
+  .title-wrap{flex-direction:column; text-align:center; gap:26px; padding:0 28px;}
+  .title-meta{flex-wrap:wrap; justify-content:center; gap:22px;}
+  .slide.content-slide{padding:26px 24px 20px;}
+  .cs-grid{grid-template-columns:1fr !important; overflow-y:auto;}
+  .cs-tag{display:none;}
+  #rail{padding:10px 12px 8px;}
+  .stop-label{display:none;}
+}
+
+/* Cursor Highlight / Mouse Halo Effect */
+.cursor-halo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 99999;
+    background: radial-gradient(
+        circle 50px at var(--mouse-x, -100px) var(--mouse-y, -100px),
+        rgba(255, 255, 0, 0.4),
+        transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+body:hover .cursor-halo {
+    opacity: 1;
+}
+</style>
+</head>
+<body>
+
+<div id="cursor-halo" class="cursor-halo"></div>
+
+<div id="rail">
+  <div class="rail-top">
+    <span><b>NMRC</b> · Standard Operating Procedure — Station</span>
+    <span id="rail-current">Loading…</span>
+  </div>
+  <div class="line-track">
+    <div class="stations" id="stations"></div>
+  </div>
+</div>
+
+<div id="viewport"></div>
+
+<div id="controls">
+  <button class="ctrl-btn" id="prevBtn">← Prev</button>
+  <span id="counter"><b id="counterNow">01</b> / <span id="counterTotal">00</span></span>
+  <button class="ctrl-btn" id="nextBtn">Next →</button>
+</div>
+
+<script>
+/* script.js */
+const DATA = [
+  { kind:"title" },
+  
+  { code:"CHAPTER-01", title:"Opening of Station", tag:"Daily · Pre-revenue",
+    panels:[
+      {h:"1.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all stations staff required to open a station for passenger traffic. ",
+        "<b>Purpose:</b> Ensuring stations are open for revenue traffic on time for comfortable and safe service. "
+      ]},
+      {h:"1.6 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Ensure security, safe access, lighting, vertical circulation, and ticket sales service. ",
+        "<b>Duties:</b> Inspect premises for abnormalities and ensure Work permits are cancelled. ",
+        "Start escalators, place lifts in service, check Platform Screen Doors and AFC gates. ",
+        "Ensure TOM/TVM/CCC and ticketing staff are ready 10 minutes before the first train. ",
+        "Ensure proper accounting of cash and handover to morning duty controller. "
+      ]},
+      {h:"1.7 Other Staff (SM, CRA/CC)", items:[
+        "<b>Station Manager:</b> Inspect entire premises, observe passenger flow, and check safety equipment. ",
+        "<b>Station Manager:</b> Sign/update all records on daily basis. ",
+        "<b>CRA/CC:</b> Report for duty as per time schedule given in duty roster. ",
+        "<b>CRA/CC:</b> Collect Shift Abstract Form (SAF), media, and cash/coin imprest. ",
+        "<b>CRA/CC:</b> Sign in private cash declaration register as 'Nil' and open designated counter. ",
+        "<b>CRA/CC:</b> Examine TOM/TVM/CCC for readiness; keep locked from inside for security. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-02", title:"Inspection of Station", tag:"Daily · Recurring",
+    panels:[
+      {h:"2.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all stations and supervisory staff. ",
+        "<b>Purpose:</b> Maintains cleanliness, safety, and efficiency for passengers. ",
+        "<b>Guidelines:</b> Inspections conducted before and after revenue services; cleanliness prioritised. ",
+        "<b>Checklist:</b> Covers ground level, concourse level, paid area, and platform level. "
+      ]},
+      {h:"2.7 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Conducts regular inspections and maintains passenger areas. ",
+        "<b>Checks:</b> lighting, escalators, lifts, AFC gates, TOM/TVM, CCC, signage, emergency equipment, security, facilities. ",
+        "<b>Actions:</b> Deficiencies recorded; action taken within scope. ",
+        "<b>Escalation:</b> Maintenance requirements escalated to OCC/TC and tracked to closure. ",
+        "<b>Logging:</b> Findings logged in the station diary. "
+      ]},
+      {h:"2.11 Other Staff (SM & Maint.)", items:[
+        "<b>Station Manager:</b> Inspects all areas daily, reports deficiencies, ensures standard cleaning. ",
+        "<b>Maintenance/Contractors:</b> No work is undertaken during revenue operation hours. ",
+        "<b>Exceptions:</b> Emergent work requires prior approval and direct supervision by nominated staff. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-03", title:"Operation of Escalator", tag:"Vertical circulation",
+    panels:[
+      {h:"3.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all stations and staff supervising escalator operation. ",
+        "<b>Purpose:</b> Ensures safe vertical circulation between platform and concourse/ground level. "
+      ]},
+      {h:"3.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Manages operation, responds to stoppages, ensures maintenance. ",
+        "<b>Instructions:</b> Start safely, observe for abnormalities, change direction correctly. ",
+        "<b>Emergency:</b> Stop immediately in case of accident; barricade if necessary — passenger safety first. ",
+        "<b>Energy Conservation:</b> Stop escalators not needed during revenue hours and barricade. "
+      ]},
+      {h:"3.6 Other Staff (SM & Maint.)", items:[
+        "<b>Station Manager:</b> Ensures availability, staff knowledge and key management. ",
+        "<b>Maintenance:</b> Escalators under maintenance are cordoned off and marked 'Out of Service'. ",
+        "<b>Handback:</b> Control centre informed; tested before resuming public use. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-04", title:"Operation of Lift", tag:"Vertical circulation",
+    panels:[
+      {h:"4.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all stations and staff supervising lift operations. ",
+        "<b>Purpose:</b> Ensures safe vertical circulation for passengers with disabilities and senior citizens. "
+      ]},
+      {h:"4.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Manages operation, responds to stoppages, ensures maintenance. ",
+        "<b>Instructions:</b> Start safely from appropriate landing; check emergency systems and cleanliness before use. ",
+        "<b>Emergency:</b> Stop lift on circuit-breaker trip/safety failure; perform lift-rescue operation if trapped. ",
+        "<b>Closing:</b> Call lift to appropriate landing, confirm empty, switch out of service from top control panel. "
+      ]},
+      {h:"4.6 Other Staff (SM, CRA/CC, OCC)", items:[
+        "<b>Station Manager:</b> Ensures availability, staff knowledge and key management. ",
+        "<b>CRA/CC:</b> Use intercom to ascertain lift number and injury status from trapped passengers. ",
+        "<b>Maintenance:</b> Planned in advance; stoppages kept short; OCC informed before and after. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-05", title:"Response to Station Fire Alarm", tag:"Emergency", emergency:true,
+    panels:[
+      {h:"5.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all stations and staff for fire response. ",
+        "<b>Purpose:</b> Ensures passenger and staff safety and minimises disruption during fire incidents. ",
+        "<b>Train Operations:</b> Trains may bypass the station or unload at the previous station. "
+      ]},
+      {h:"5.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Ensures safety, initiates fire control measures, and coordinates with fire services. ",
+        "<b>Action:</b> Acknowledges alarm, identifies location, reports to traffic control immediately. ",
+        "<b>Evacuation:</b> Procedures activated if smoke/fire detected; escalators and lifts managed per needs. ",
+        "<b>Clearance:</b> Station reopens only after clearance from fire services. "
+      ]},
+      {h:"5.6 Other Staff (Security & TC)", items:[
+        "<b>All Staff:</b> Attempt to extinguish fire only if safe; otherwise evacuate and close doors. ",
+        "<b>Traffic Control (TC):</b> Continuous communication maintained with traffic control and fire services. ",
+        "<b>Security:</b> Coordinate rescue efforts, assist evacuation, preserve evidence, and liaise with police. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-06", title:"Emergency Evacuation of Station", tag:"Emergency", emergency:true,
+    panels:[
+      {h:"6.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all stations and supervisory staff. ",
+        "<b>Purpose:</b> Ensures safe evacuation of passengers and staff while minimising panic and disruption. ",
+        "<b>Authority:</b> Evacuation is ordered by the Chief Controller or authorities; station remains closed until clearance is given. "
+      ]},
+      {h:"6.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Ensures safety, clears station promptly, and informs TC of evacuation. ",
+        "<b>Communication:</b> Makes PA announcements for evacuation and coordinates with ticketing staff. ",
+        "<b>Access Control:</b> Manages escalator and AFC gate control; displays closure messages on PIDS. ",
+        "<b>Final Check:</b> Conducts station inspection and ensures secure closure of the SCR. "
+      ]},
+      {h:"6.6 Other Staff (TC & Security)", items:[
+        "<b>Traffic Controller (TC):</b> Assists passenger clearance and train operations. ",
+        "<b>TC Role:</b> Broadcasts closure to trains, guides train operations, and instructs passengers via the Train Operator. ",
+        "<b>Security Staff:</b> Manage crowd control, ensure smooth exit flows, and liaise with local police for entry/exit closure. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-07", title:"Mobilization of Emergency Services", tag:"Emergency", emergency:true,
+    panels:[
+      {h:"7.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all Station Controllers and relevant staff. ",
+        "<b>Purpose:</b> Ensures prompt response from fire brigade, ambulance, and police, minimising delay. ",
+        "<b>Safety Protocol:</b> Direct track access is strictly prohibited without explicit permission from the Traffic Controller (TC). "
+      ]},
+      {h:"7.5 Station Controller (SC)", items:[
+        "<b>Coordination:</b> Routes all emergency service requests through the Traffic Controller (TC). ",
+        "<b>Power Management:</b> Coordinates OHE shutdown with the Traction Power Controller (TPC) if required. ",
+        "<b>Deployment:</b> Immediately assigns staff to the designated entrance with clear routing instructions for responders. "
+      ]},
+      {h:"7.6 Other Staff (SM & CC)", items:[
+        "<b>Station Manager:</b> Earmarks one entrance for emergency services based on vehicular access and minimal passenger conflict. ",
+        "<b>Station Manager:</b> Maintains and regularly reviews the current contact list of hospitals, police, and fire services in the SCR. ",
+        "<b>Chief Controller:</b> Ensures emergency services attend the designated station entrance. ",
+        "<b>Station Staff:</b> Identify themselves and guide emergency personnel directly to the incident site. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-08", title:"Response to Incidents", tag:"Emergency", emergency:true,
+    panels:[
+      {h:"8.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all Station Controllers and staff. ",
+        "<b>Purpose:</b> Ensures prompt assistance to sick, injured or distressed passengers. ",
+        "<b>Guidelines:</b> Staff witnessing an incident inform the Station Controller immediately; reports may come from staff, passengers, or Train Operators. "
+      ]},
+      {h:"8.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Provide first aid, medical help, evacuation, and minimise delay. ",
+        "<b>Action:</b> Attend to sick/injured passengers at site; coordinate de-boarding from trains. ",
+        "<b>Coordination:</b> Arrange ambulance services, make announcements, and report the incident. "
+      ]},
+      {h:"8.6 Other Staff (SM, CRA, OCC)", items:[
+        "<b>Chief Controller:</b> Arranges emergency services and outside help. ",
+        "<b>Station Manager:</b> Informs OCC, arranges ambulance dispatch, and takes measures to prevent escalation. ",
+        "<b>CRA:</b> Assists passengers, supports other agencies, and aids crowd management. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-09", title:"Crowd Management", tag:"Operations",
+    panels:[
+      {h:"9.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to NMRC staff at OCC and security staff. ",
+        "<b>Purpose:</b> Prevents unmanageable passenger build-up from service delays or other failures. ",
+        "<b>Communication:</b> Announcements and displayed messages keep passengers informed of actions taken. "
+      ]},
+      {h:"9.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Monitors flow, prevents congestion, closes entrances if necessary. ",
+        "<b>Action:</b> Passenger flow monitored closely at peak periods. ",
+        "<b>Control Measures:</b> Escalators slowed or entry points closed if congestion is expected. "
+      ]},
+      {h:"9.6 Other Staff (TC & Security)", items:[
+        "<b>Traffic Controller (TC):</b> Informs stations of extended intervals, coordinates with security control. ",
+        "<b>Security:</b> Coordination with station management and local police for crowd management. ",
+        "<b>Support:</b> Metro traffic regulation requested if needed; Corporate Comms handles media inquiries. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-10", title:"Passenger Information", tag:"Operations",
+    panels:[
+      {h:"10.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all stations and supervisory staff. ",
+        "<b>Purpose:</b> Keeps passengers informed of services and disruptions. ",
+        "<b>Best Practice:</b> Avoid overuse of PA — use PIDS for continuous information. ",
+        "<b>Restriction:</b> Restrict PA during non-revenue hours to safety/emergency messages. "
+      ]},
+      {h:"10.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Broadcasts information immediately and displays it on PIDS. ",
+        "<b>PA Use:</b> Used for urgent, station-specific messages, or broadcasts for critical notifications. ",
+        "<b>Actions:</b> Verify availability before broadcasting; record announcements for repeats. ",
+        "<b>PIDS:</b> Composes and displays PIDS messages, alternating with train information. "
+      ]},
+      {h:"10.6 Other Staff (TC & SM)", items:[
+        "<b>Traffic Controller (TC):</b> Informs stations of intervals, incidents and emergencies. ",
+        "<b>Station Manager:</b> Carries out regular accuracy checks of displayed/broadcasted information. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-11", title:"Emergency Stop Plunger", tag:"Emergency", emergency:true,
+    panels:[
+      {h:"11.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to Station Controllers, Security Staff and CRAs. ",
+        "<b>Purpose:</b> Familiarity with ESP and PSB operation to stop trains safely. ",
+        "<b>Function:</b> Stops an approaching train or applies emergency brakes on trains at the platform. ",
+        "<b>Activation:</b> Operated whenever a potential danger (obstruction, passenger emergency) is observed. "
+      ]},
+      {h:"11.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Monitors platforms via CCTV, operates the ESP, and investigates any activation. ",
+        "<b>Reset Procedure:</b> Informs the Traffic Controller and examines the platform via CCTV or in person. ",
+        "<b>Action:</b> Resets ESP only once the situation is confirmed normalised. ",
+        "<b>Follow-up:</b> Delay announcements made if disruption exceeds 2 minutes; recorded in station diary. "
+      ]},
+      {h:"11.6 Other Staff (Security & CRA)", items:[
+        "<b>All Staff:</b> Stay alert to emergencies involving train movement and passenger behaviour. ",
+        "<b>Security Staff:</b> Inspect the platform and report the situation back to the Station Controller. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-12", title:"Emergency Discharge of Traction Power", tag:"Emergency", emergency:true,
+    panels:[
+      {h:"12.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to Train Operators, Station Controllers, Security staff, CRA and other duty staff. ",
+        "<b>Purpose:</b> Prompt action prevents or minimises damage or injury from a traction power defect. ",
+        "<b>Guidelines:</b> All staff stay alert to power emergencies and switch off traction power swiftly if risk is observed. "
+      ]},
+      {h:"12.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Trips OHE / switches off supply, makes announcements, restricts access, and manages crowds. ",
+        "<b>Communication:</b> Informs passengers of delays and the expected service resumption time. ",
+        "<b>Request Details:</b> Specifies track, station/depot, nearest mast/signal number and the reason to TPC. "
+      ]},
+      {h:"12.6 Other Staff (TPC & TC)", items:[
+        "<b>Traction Power Controller (TPC):</b> Alerted promptly via radio, priority telephone, or regular telephone. ",
+        "<b>TPC Action:</b> Restores power only after investigation, hazard removal, and confirming OHE earthing. ",
+        "<b>Traffic Controller (TC/OCC):</b> Assist in informing passengers of delays. "
+      ]}
+    ]
+  },
+  
+  { code:"CHAPTER-13", title:"Closing of Station", tag:"Daily · Post-revenue",
+    panels:[
+      {h:"13.1 Scope & Guidelines", items:[
+        "<b>Scope:</b> Applies to all stations and staff responsible for closing after revenue operation hours. ",
+        "<b>Purpose:</b> Clears the station of passengers and secures it against unauthorised access. ",
+        "<b>Clearance:</b> All inward passengers confirmed clear of the concourse. "
+      ]},
+      {h:"13.5 Station Controller (SC)", items:[
+        "<b>Responsibilities:</b> Ensures security, clears the station, secures valuables, supervises maintenance access. ",
+        "<b>Closing Sequence:</b> Five minutes before the last train, announcements inform passengers; last train departure supervised. ",
+        "<b>Final Checks:</b> Public areas personally inspected; all entrances closed and locked. ",
+        "<b>Power & Access:</b> Escalators, lifts and main lighting switched off, except for authorised maintenance/cleaning. "
+      ]},
+      {h:"13.6 Other Staff (CRA/CC & Ticketing)", items:[
+        "<b>Ticketing Staff:</b> Ticket office closed before departure; interchange connections confirmed. ",
+        "<b>CRA/CC:</b> Cash, imprest and ticket stock received and secured. ",
+        "<b>Security Verification:</b> Ticket office and Customer Care Centre (CCC) confirmed locked. "
+      ]}
+    ]
+  },
+  
+  { kind:"end" }
+];
+
+document.addEventListener('DOMContentLoaded', () => {
+    const viewport = document.getElementById("viewport");
+    const stationsWrap = document.getElementById("stations");
+    let currentIdx = 0;
+
+    function buildSlide(item, idx){
+      const el = document.createElement("div");
+      el.className = "slide";
+      el.dataset.index = idx;
+      
+      if (item.kind === "index") el.id = "index-slide";
+
+      if(item.kind === "title"){
+        el.classList.add("title-slide");
+        el.innerHTML = `
+          <div class="title-wrap">
+            <div class="title-mark"></div>
+            <div>
+              <p class="title-eyebrow">Noida Metro Rail Corporation</p>
+              <h1 class="title-heading">Station<br><em>SOP</em></h1>
+              <p class="title-sub">Standard Operating Procedures governing daily station operations, equipment handling, and emergency response — Revision 00.</p>
+              <div class="title-meta">
+                <span>Prepared by<b>Manish Kumar</b></span>
+                <span>Document<b>CHAPTER&nbsp;01–13</b></span>
+                <span>Scope<b>All Stations</b></span>
+              </div>
+            </div>
+          </div>`;
+        return el;
+      }
+
+      if(item.kind === "end"){
+        el.classList.add("end-slide");
+        el.innerHTML = `
+          <div>
+            <p class="title-eyebrow">End of Document</p>
+            <h2>Station SOP — Chapters Complete</h2>
+            <p>All procedures strictly covering opening, inspection, vertical circulation, and emergencies according to official NMRC guidelines.</p>
+          </div>`;
+        return el;
+      }
+
+      el.classList.add("content-slide");
+      if(item.emergency) el.classList.add("is-emergency");
+      const cols = item.panels ? item.panels.length : 1;
+      
+      let panelsHtml = '';
+      if(item.panels) {
+        panelsHtml = item.panels.map(p => `
+          <div class="panel">
+            <h3>${p.h}</h3>
+            <ul>${p.items.map(i => `<li>${i}</li>`).join("")}</ul>
+          </div>
+        `).join("");
+      }
+
+      el.innerHTML = `
+        <div class="cs-head">
+          <span class="cs-code">${item.code || ""}</span>
+          <h2 class="cs-title">${item.title || ""}</h2>
+          <span class="cs-tag">${item.tag || ""}</span>
+        </div>
+        <div class="cs-grid" style="--cols:${cols}">
+          ${panelsHtml}
+        </div>
+      `;
+      return el;
+    }
+
+    DATA.forEach((item, idx) => viewport.appendChild(buildSlide(item, idx)));
+
+    DATA.forEach((item, idx) => {
+      const s = document.createElement("button");
+      s.className = "station";
+      s.setAttribute("aria-label", item.kind === "title" ? "Title" : (item.kind === "end" ? "End" : `${item.code}: ${item.title}`));
+      if(item.emergency) s.classList.add("emergency");
+      const label = document.createElement("span");
+      label.className = "stop-label";
+      label.textContent = item.kind === "title" ? "START" : (item.kind === "end" ? "END" : (item.code ? item.code.replace("CHAPTER-","") : ""));
+      s.appendChild(label);
+      s.addEventListener("click", () => goToSlide(idx));
+      stationsWrap.appendChild(s);
+    });
+
+    const slides = document.querySelectorAll(".slide");
+    const stationEls = document.querySelectorAll(".station");
+    const totalSlides = slides.length;
+    
+    const counterNow = document.getElementById("counterNow");
+    const counterTotal = document.getElementById("counterTotal");
+    const railCurrent = document.getElementById("rail-current");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    if(counterTotal) {
+        counterTotal.textContent = String(DATA.length - 2).padStart(2, "0"); // Total chapters excluding title/end
+    }
+
+    function goToSlide(index, isShortcut = false){
+      if (index < 0 || index >= totalSlides) return;
+      
+      if (!isShortcut && slides[index].id === 'index-slide') {
+          return; 
+      }
+      
+      currentIdx = index;
+      
+      slides.forEach((s, i) => s.classList.toggle("active", i === index));
+      stationEls.forEach((s, i) => {
+        s.classList.toggle("active", i === index);
+        s.classList.toggle("done", i < index);
+      });
+      
+      if(counterNow) {
+          if (slides[currentIdx].id === 'index-slide') {
+              counterNow.textContent = 'IX';
+          } else if (index === 0) {
+              counterNow.textContent = '--';
+          } else if (index === totalSlides - 1) {
+              counterNow.textContent = '--';
+          } else {
+              counterNow.textContent = String(index).padStart(2, "0");
+          }
+      }
+      
+      const item = DATA[index];
+      if(railCurrent) {
+        railCurrent.textContent = item.kind === "title" ? "Title" : (item.kind === "end" ? "End of document" : `${item.code} — ${item.title}`);
+      }
+      
+      if(prevBtn) prevBtn.disabled = index === 0;
+      if(nextBtn) nextBtn.disabled = index === totalSlides - 1;
+    }
+
+    if(prevBtn) prevBtn.addEventListener("click", () => goToSlide(currentIdx - 1));
+    if(nextBtn) nextBtn.addEventListener("click", () => goToSlide(currentIdx + 1));
+
+    let touchstartX = 0;
+    let touchendX = 0;
+    const swipeThreshold = 50; 
+
+    viewport.addEventListener('touchstart', (e) => {
+        touchstartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    viewport.addEventListener('touchend', (e) => {
+        touchendX = e.changedTouches[0].screenX;
+        const distance = touchendX - touchstartX;
+
+        if (distance < -swipeThreshold) {
+            goToSlide(currentIdx + 1); 
+        } else if (distance > swipeThreshold) {
+            goToSlide(currentIdx - 1); 
+        }
+    });
+
+    viewport.addEventListener('click', (e) => {
+        if(e.target.tagName.toLowerCase() === 'button' || e.target.closest('.station') || e.target.closest('.ctrl-btn')) return;
+        
+        const rect = viewport.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const width = rect.width;
+
+        if (clickX < width * 0.05) {
+            goToSlide(currentIdx - 1); 
+        } else if (clickX > width * 0.95) {
+            goToSlide(currentIdx + 1); 
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'PageDown') {
+            e.preventDefault();
+            goToSlide(currentIdx + 1);
+        } 
+        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+            e.preventDefault();
+            goToSlide(currentIdx - 1);
+        } 
+        else if (e.key === 'Home') {
+            e.preventDefault();
+            goToSlide(0, true);
+        } 
+        else if (e.key === 'End') {
+            e.preventDefault();
+            goToSlide(totalSlides - 1, true);
+        }
+    });
+
+    const cursorHalo = document.getElementById('cursor-halo');
+    if (cursorHalo) {
+        document.addEventListener('mousemove', (e) => {
+            cursorHalo.style.setProperty('--mouse-x', `${e.clientX}px`);
+            cursorHalo.style.setProperty('--mouse-y', `${e.clientY}px`);
+        });
+    }
+
+    goToSlide(0);
+});
+</script>
+</body>
+</html>
